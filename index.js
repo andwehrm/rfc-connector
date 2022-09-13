@@ -42,10 +42,6 @@ const properties = [
     warning: 'Username must be only letters, spaces, or dashes'
   },
   {
-    name: 'password',
-    hidden: true
-  },
-  {
     name: 'sysnr',
     validator: /^\d\d$/,
     warning: 'sysnr must be a 2 digit number number from 00 to 99'
@@ -57,7 +53,12 @@ const properties = [
   },
   {
     name: 'ashost'
-  }
+  },
+  {
+    name: 'password',
+    hidden: true,
+    replace: '*',
+  },
 ];
 
 function request_rfc(method, req, res){
@@ -129,6 +130,8 @@ function request_rfc(method, req, res){
 }
 
 prompt.start();
+
+prompt.message = "";
 
 prompt.get(properties, function (err, result) {
   if (err) {
