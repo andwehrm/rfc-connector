@@ -1,19 +1,21 @@
 const express = require('express')
 const noderfc = require('node-rfc')
 const prompt = require('prompt');
-var session = require('express-session')
-var bodyParser = require('body-parser');
-require('body-parser-xml')(bodyParser);
+const session = require('express-session')
+const bodyParser = require('body-parser');
 
 var stateful_client;
 
 const app = express()
 const port = 1080
 
-app.use(bodyParser.json())
-app.use(bodyParser.text())
-app.use(bodyParser.urlencoded({ extended: true })); 
-app.use(bodyParser.xml());
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb', verify: (req, res, buf) => {
+  req.rawBody = buf
+}})); 
+
+app.use(bodyParser.text({type: "*/*" , limit: '100mb', verify: (req, res, buf) => {
+  req.rawBody = buf
+}}))
 
 app.use(session({
   secret: 'secretSTATEFUL',
@@ -45,7 +47,8 @@ const properties = [
   },
   {
     name: 'sysnr',
-
+    validator: /^\d\d$/,
+    warning: 'sysnr must be a 2 digit number number from 00 to 99'
   },
   {
     name: 'client',
@@ -61,8 +64,15 @@ function request_rfc(method, req, res){
     (async () => {
         try {
             var clnt;
-            
-            if(JSON.stringify(req.headers).includes('stateful')){
+            var stfl = false;
+
+            for (const key in req.headers) {
+              if(req.headers[key].includes("stateful")){
+                stfl = true;
+              }
+            }
+
+            if(stfl === true){
               clnt = stateful_client;
             }
             else{
@@ -76,27 +86,29 @@ function request_rfc(method, req, res){
                 VERSION: "HTTP/1.1"
             }
             let headers = [];
+
             for (const key in req.headers) {
                 headers.push({NAME: key, VALUE: req.headers[key]})
-              }
+            }
 
-            const sadt_request = {
+            var sadt_request;
+            if(Object.keys(req.body).length < 1)
+            {
+              sadt_request = {
                 REQUEST_LINE :  request_line,
                 HEADER_FIELDS : headers,
-                MESSAGE_BODY : new Buffer(req.body.toString("ANSI"))
+                MESSAGE_BODY : new Buffer(2)
             };
-
-            // Fixing Bug with Activation not working because of wrong format on XML
-            // definetly better ways to fix this.
-            if(req.url.includes('activate'))
-            {
-             var xmlbody = JSON.stringify(req.body);
-             xmlbody = xmlbody.replace(String.raw`{"<?xml version":"\"1.0\" encoding=\"UTF-8\"?>`, String.raw`<?xml version="1.0" encoding="UTF-8"?>`)
-             xmlbody = xmlbody.replace(/\\"/g, '"');
-
-             sadt_request.MESSAGE_BODY = new Buffer(xmlbody)
             }
-             
+            else
+            {
+            sadt_request = {
+                REQUEST_LINE :  request_line,
+                HEADER_FIELDS : headers,
+                MESSAGE_BODY : new Buffer(req.rawBody.toString("utf8"))
+            };
+           }
+
             const result = await clnt.call("SADT_REST_RFC_ENDPOINT", {
                 REQUEST : sadt_request,
             });
