@@ -1,4 +1,7 @@
 # rfc-connector
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Node.js Version](https://img.shields.io/badge/node-%3E%3D12.0.0-brightgreen)
+![Platform](https://img.shields.io/badge/platform-cross--platform-blue)
 
 Simple Express JS Server to expose the ABAP Development Tools Webservice on localhost through the RFC Gateway. Requires the SAP NetWeaver RFC SDK (SAPNWRFC SDK) to function.
 
